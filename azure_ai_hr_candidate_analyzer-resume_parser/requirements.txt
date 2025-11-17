@@ -8,3 +8,5 @@ kaggle
 
 # Podstawowe biblioteki
 python-dotenv
+
+streamlit
