@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import streamlit as st
 
@@ -79,7 +79,12 @@ def main() -> None:
     )
 
     loader = get_loader()
-    matcher = get_matcher()
+    matcher_error: Optional[Exception] = None
+    try:
+        matcher = get_matcher()
+    except Exception as exc:  # noqa: BLE001
+        matcher = None
+        matcher_error = exc
 
     col_job, col_cv = st.columns(2)
 
@@ -146,8 +151,24 @@ def main() -> None:
                 except ValueError as exc:
                     st.error(str(exc))
 
+    if matcher_error:
+        st.error(
+            "Nie udało się zainicjalizować klienta Azure OpenAI. Upewnij się, że w pliku "
+            "`src/.env` znajdują się zmienne `AZURE_OPENAI_ENDPOINT`, "
+            "`AZURE_OPENAI_KEY` oraz `AZURE_OPENAI_DEPLOYMENT_NAME`, a następnie "
+            "uruchom aplikację ponownie."
+        )
+        with st.expander("Szczegóły błędu"):
+            st.exception(matcher_error)
+
     st.divider()
-    if st.button("🔍 Porównaj kandydatów", type="primary"):
+    run_clicked = st.button(
+        "🔍 Porównaj kandydatów",
+        type="primary",
+        disabled=matcher is None,
+    )
+
+    if run_clicked:
         if not job_offer_text.strip():
             st.error("Podaj treść oferty pracy.")
             return
@@ -157,7 +178,7 @@ def main() -> None:
 
         with st.spinner("Łączę z Azure OpenAI i analizuję kandydatów..."):
             try:
-                result = matcher.match(job_offer=job_offer_text, cv_list=cvs)
+                result = matcher.match(job_offer=job_offer_text, cv_list=cvs)  # type: ignore[union-attr]
             except Exception as exc:  # noqa: BLE001
                 st.error(
                     "Nie udało się przeprowadzić analizy. Sprawdź konfigurację Azure i spróbuj ponownie."
