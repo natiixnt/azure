@@ -1,0 +1,10 @@
+# Azure SDK
+azure-ai-documentintelligence
+azure-core
+openai
+
+# Data processing
+kaggle
+
+# Podstawowe biblioteki
+python-dotenv
